@@ -1,6 +1,7 @@
 from collections import UserDict
 import unittest
 from functools import singledispatchmethod
+from uuid import uuid4
 
 class ComponentDict(UserDict):
     
@@ -28,6 +29,22 @@ class ComponentDict(UserDict):
             raise TypeError("Duplicate Type")
         self.data[type(comp)] = comp
 
+class EntityDict(UserDict):
+
+    def __init__(self,compDictList = []):
+        intermDict = {uuid4():compDict for compDict in compDictList}
+        super().__init__(intermDict)
+
+    def add(self, compDict):
+        super().__setitem__(uuid4(), compDict)
+
+    def query(self, compTuple):
+        keyList = []
+        for key, compDict in self.data.items():
+            if compTuple in compDict:
+                keyList.append(key)
+        return keyList
+
 class TestComponentDict(unittest.TestCase):
     def test_InitSucess(self):
         testCompDict = ComponentDict(1,True,8.8)
@@ -54,3 +71,18 @@ class TestComponentDict(unittest.TestCase):
         self.assertTrue(int in testCompDict)
         self.assertTrue(float in testCompDict)
         self.assertTrue((int, float) in testCompDict)
+
+class TestEntityDict(unittest.TestCase):
+    compDictList = [ComponentDict(1,2.2,True),
+                    ComponentDict("strTest",False)]
+    def test_InitSuccess(self):
+        testEntDict = EntityDict(self.compDictList)
+        self.assertEqual(len(testEntDict),len(self.compDictList))
+
+    def test_AddSuccess(self):
+        testEntDict = EntityDict()
+        self.assertEqual(len(testEntDict),0)
+        testEntDict.add(self.compDictList[0])
+        self.assertEqual(len(testEntDict),1)
+        testKey = list(testEntDict.keys())[0]
+        self.assertEqual(testEntDict[testKey], self.compDictList[0])
